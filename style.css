@@ -297,7 +297,17 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 }
 
 @media (max-width: 768px) {
-  #main { flex-direction: column; }
-  #sidebar { width: 100%; max-width: 100%; height: 45vh; border-right: none; border-bottom: 1px solid var(--border); }
-  #map { height: 55vh; }
+  body { height: auto; overflow: visible; }
+  #main { flex-direction: column; height: auto; }
+  #sidebar {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  /* Fixed height sized for ~6 rows; list scrolls internally rather than
+     competing with the map for the same space. */
+  #venue-list { flex: none; height: 480px; }
+  #map { flex: none; height: 420px; }
 }
