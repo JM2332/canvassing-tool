@@ -1,14 +1,21 @@
 :root {
-  --brand: #1d5a3a;
-  --brand-dark: #123c26;
-  --bg: #f5f6f4;
+  --forest: #1C3A2B;
+  --chartreuse: #CDDC5C;
+  --chartreuse-hover: #DCE87E;
+  --sage: #7A8B5E;
+  --charcoal: #22231F;
+  --cream: #F6F3E7;
+
+  --brand: var(--forest);
+  --brand-dark: #12261b;
+  --accent: var(--chartreuse);
+  --accent-text: var(--charcoal);
+  --bg: var(--cream);
+  --bg-hover: #efe9d4;
   --panel: #ffffff;
-  --border: #dfe3df;
-  --text: #1c231d;
-  --muted: #6b756c;
-  --danger: #c0392b;
-  --warn: #d68910;
-  --good: #1e8449;
+  --border: #e3dfcb;
+  --text: var(--charcoal);
+  --muted: var(--sage);
 }
 
 * { box-sizing: border-box; }
@@ -25,7 +32,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 #topbar {
   background: var(--brand);
-  color: white;
+  color: var(--cream);
   padding: 10px 16px;
   display: flex;
   flex-wrap: wrap;
@@ -52,7 +59,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   display: flex;
   flex-direction: column;
   font-size: 11px;
-  color: #dfeee5;
+  color: rgba(246, 243, 231, .75);
   gap: 2px;
 }
 
@@ -70,15 +77,15 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   padding: 7px 14px;
   border: none;
   border-radius: 4px;
-  background: #e9c46a;
-  color: #3a2c00;
+  background: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   cursor: pointer;
 }
-#search-form button:hover { background: #f0d182; }
+#search-form button:hover { background: var(--chartreuse-hover); }
 #search-form button:disabled { opacity: .6; cursor: wait; }
 
-#load-status { font-size: 12px; color: #dfeee5; }
+#load-status { font-size: 12px; color: rgba(246, 243, 231, .75); }
 
 #main {
   flex: 1;
@@ -148,7 +155,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   gap: 8px;
   align-items: flex-start;
 }
-.venue-row:hover { background: #f0f2ef; }
+.venue-row:hover { background: var(--bg-hover); }
 .venue-row input[type=checkbox] { margin-top: 3px; }
 .venue-row .vr-main { flex: 1; min-width: 0; }
 .venue-row .vr-name { font-weight: 600; font-size: 13.5px; }
@@ -171,23 +178,23 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  background: #fafbfa;
+  background: var(--bg-hover);
 }
 #route-btn {
   flex: 1;
   padding: 7px;
   background: var(--brand);
-  color: white;
+  color: var(--cream);
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12.5px;
 }
-#route-btn:disabled { background: #b7c3ba; cursor: not-allowed; }
+#route-btn:disabled { background: #b3bcaa; cursor: not-allowed; }
 #clear-route-btn {
   padding: 7px 10px;
   border: 1px solid var(--border);
-  background: white;
+  background: var(--panel);
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
@@ -206,11 +213,11 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   padding: 6px 4px;
   font-size: 11.5px;
   border: 1px solid var(--border);
-  background: white;
+  background: var(--panel);
   border-radius: 4px;
   cursor: pointer;
 }
-#data-actions button:hover { background: #f0f2ef; }
+#data-actions button:hover { background: var(--bg-hover); }
 
 #map { flex: 1; }
 
@@ -220,7 +227,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   box-shadow: 0 0 3px rgba(0,0,0,.5);
 }
 .venue-marker.not-interested { opacity: .35; }
-.venue-marker.customer { border-color: gold; border-width: 3px; }
+.venue-marker.customer { border-color: var(--chartreuse); border-width: 3px; }
 
 #detail-overlay {
   position: fixed;
@@ -234,7 +241,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 #detail-overlay.hidden { display: none; }
 
 #detail-panel {
-  background: white;
+  background: var(--panel);
   width: 420px;
   max-width: 92vw;
   max-height: 88vh;
@@ -274,14 +281,14 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   padding: 6px 10px;
   border-radius: 4px;
   border: 1px solid var(--border);
-  background: #f5f6f4;
+  background: var(--bg);
   color: var(--text);
   text-decoration: none;
   cursor: pointer;
 }
 #save-detail-btn {
   background: var(--brand);
-  color: white;
+  color: var(--cream);
   border: none;
   padding: 8px 14px;
   border-radius: 4px;

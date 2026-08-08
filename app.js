@@ -1,4 +1,4 @@
-/* Keith Mawby Ltd - Canvassing Planner
+/* KML Foodservice - Canvassing Planner
    Pure client-side app. Data sources: postcodes.io (UK geocoding) + Overpass API (OpenStreetMap).
    Rep's edits (status/notes/route selection) are saved in localStorage on this browser/device. */
 
@@ -323,7 +323,7 @@ function renderList() {
         <div class="vr-meta">
           <span class="badge" style="background:${CATEGORIES[v.category].color}">${CATEGORIES[v.category].label}</span>
           <span class="badge" style="background:${STATUS_COLORS[ov.status]}">${ov.status}</span>
-          ${isChain(v) ? '<span class="badge" style="background:#555">Chain</span>' : ''}
+          ${isChain(v) ? '<span class="badge" style="background:#22231F">Chain</span>' : ''}
           <span class="dist">${v.distance.toFixed(1)} mi</span>
         </div>
       </div>`;
