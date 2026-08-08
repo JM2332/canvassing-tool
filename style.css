@@ -306,8 +306,8 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
     border-right: none;
     border-bottom: 1px solid var(--border);
   }
-  /* Fixed height sized for ~5 rows (70px each); list scrolls internally
+  /* Fixed height sized for ~4 rows (70px each); list scrolls internally
      rather than competing with the map for the same space. */
-  #venue-list { flex: none; height: 350px; }
+  #venue-list { flex: none; height: 280px; }
   #map { flex: none; height: 420px; }
 }
