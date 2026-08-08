@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvassing Planner</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header id="topbar">
+  <h1>Keith Mawby Ltd &mdash; Canvassing Planner</h1>
+  <form id="search-form">
+    <label>Postcode / place
+      <input type="text" id="postcode-input" value="S71 1HN" autocomplete="off">
+    </label>
+    <label>Radius (miles)
+      <input type="number" id="radius-input" value="25" min="1" max="60" step="1">
+    </label>
+    <button type="submit" id="load-btn">Load venues</button>
+    <span id="load-status" aria-live="polite"></span>
+  </form>
+</header>
+
+<div id="main">
+  <aside id="sidebar">
+    <div id="filters">
+      <div class="filter-group" id="type-filters"></div>
+      <div class="filter-group">
+        <label>Status
+          <select id="status-filter">
+            <option value="">All statuses</option>
+          </select>
+        </label>
+        <label>
+          <input type="checkbox" id="hide-not-interested">
+          Hide "Not interested"
+        </label>
+        <label>
+          <input type="checkbox" id="show-chains">
+          Include national chains
+        </label>
+      </div>
+      <div class="filter-group">
+        <input type="text" id="search-box" placeholder="Search name or address…">
+      </div>
+      <div class="filter-group" id="results-summary"></div>
+    </div>
+
+    <div id="venue-list"></div>
+
+    <div id="route-bar">
+      <span id="route-count">0 selected</span>
+      <button id="route-btn" disabled>Plan route in Google Maps</button>
+      <button id="clear-route-btn">Clear</button>
+    </div>
+
+    <div id="data-actions">
+      <button id="export-csv-btn">Export CSV</button>
+      <button id="export-json-btn">Backup (JSON)</button>
+      <button id="import-json-btn">Restore backup</button>
+      <input type="file" id="import-file-input" accept="application/json" style="display:none">
+    </div>
+  </aside>
+
+  <main id="map"></main>
+</div>
+
+<div id="detail-overlay" class="hidden">
+  <div id="detail-panel">
+    <button id="detail-close">&times;</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
