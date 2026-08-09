@@ -1,6 +1,20 @@
 /* KML Foodservice - Canvassing Planner
    Pure client-side app. Data sources: postcodes.io (UK geocoding) + Overpass API (OpenStreetMap).
-   Rep's edits (status/notes/route selection) are saved in localStorage on this browser/device. */
+   Rep's edits (status/notes/route selection) sync via Firebase (Firestore + Auth) across devices,
+   with a localStorage copy kept as an offline/instant-load cache. */
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDAwAD42x5KhPK3lKdEHIizR5rAFR134M4",
+  authDomain: "canvassing-tool.firebaseapp.com",
+  projectId: "canvassing-tool",
+  storageBucket: "canvassing-tool.firebasestorage.app",
+  messagingSenderId: "66824555279",
+  appId: "1:66824555279:web:5229bbf2f200396cf28c7a"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const SHARED_LOGIN_EMAIL = 'jacob@kmlfoodservice.internal';
 
 const CATEGORIES = {
   restaurant: { label: 'Restaurant',  color: '#e63946', tags: [['amenity', 'restaurant']] },
@@ -83,6 +97,44 @@ function getOverride(id) {
 function setOverride(id, patch) {
   overrides[id] = Object.assign({}, getOverride(id), patch);
   saveOverrides();
+  syncOverrideToCloud(id, overrides[id]);
+}
+
+// ---------- cloud sync (Firestore) ----------
+
+function firestoreDocId(venueId) {
+  return venueId.replace('/', '_');
+}
+
+function syncOverrideToCloud(id, data) {
+  if (!auth.currentUser) return;
+  db.collection('overrides').doc(firestoreDocId(id)).set(
+    Object.assign({}, data, { venueId: id, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+  ).catch(err => console.error('Cloud sync failed for', id, err));
+}
+
+let unsubscribeOverrides = null;
+
+function subscribeOverrides() {
+  if (unsubscribeOverrides) unsubscribeOverrides();
+  unsubscribeOverrides = db.collection('overrides').onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      const data = change.doc.data();
+      if (!data.venueId) return;
+      if (change.type === 'removed') {
+        delete overrides[data.venueId];
+      } else {
+        overrides[data.venueId] = {
+          status: data.status || 'Not contacted',
+          notes: data.notes || '',
+          lastVisited: data.lastVisited || '',
+          priority: !!data.priority,
+        };
+      }
+    });
+    saveOverrides();
+    renderAll();
+  }, err => console.error('Overrides subscription failed', err));
 }
 
 function loadCache() {
@@ -542,4 +594,39 @@ function boot() {
   }
 }
 
-boot();
+// ---------- login gate ----------
+
+const loginOverlay = document.getElementById('login-overlay');
+const loginForm = document.getElementById('login-form');
+const loginPasscode = document.getElementById('login-passcode');
+const loginError = document.getElementById('login-error');
+let booted = false;
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = loginForm.querySelector('button');
+  btn.disabled = true;
+  loginError.textContent = '';
+  try {
+    await auth.signInWithEmailAndPassword(SHARED_LOGIN_EMAIL, loginPasscode.value);
+  } catch (err) {
+    loginError.textContent = 'Incorrect passcode.';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    loginOverlay.classList.add('hidden');
+    loginPasscode.value = '';
+    if (!booted) {
+      booted = true;
+      boot();
+    }
+    subscribeOverrides();
+  } else {
+    loginOverlay.classList.remove('hidden');
+    if (unsubscribeOverrides) { unsubscribeOverrides(); unsubscribeOverrides = null; }
+  }
+});
