@@ -462,19 +462,79 @@ document.getElementById('detail-overlay').addEventListener('click', (e) => {
 
 // ---------- route ----------
 
+function nearestNeighborOrder(points) {
+  if (points.length <= 1) return points.slice();
+  const remaining = points.slice();
+  let anchorIdx = 0;
+  if (centerPoint) {
+    let best = Infinity;
+    remaining.forEach((p, i) => {
+      const d = haversineMiles(centerPoint.lat, centerPoint.lon, p.lat, p.lon);
+      if (d < best) { best = d; anchorIdx = i; }
+    });
+  }
+  const route = [remaining.splice(anchorIdx, 1)[0]];
+  while (remaining.length) {
+    const last = route[route.length - 1];
+    let bestIdx = 0, bestDist = Infinity;
+    remaining.forEach((p, i) => {
+      const d = haversineMiles(last.lat, last.lon, p.lat, p.lon);
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    });
+    route.push(remaining.splice(bestIdx, 1)[0]);
+  }
+  return route;
+}
+
+async function fetchOptimizedOrder(points) {
+  if (points.length <= 2) return points.slice();
+  let anchorIdx = 0;
+  if (centerPoint) {
+    let best = Infinity;
+    points.forEach((p, i) => {
+      const d = haversineMiles(centerPoint.lat, centerPoint.lon, p.lat, p.lon);
+      if (d < best) { best = d; anchorIdx = i; }
+    });
+  }
+  const ordered = [points[anchorIdx], ...points.slice(0, anchorIdx), ...points.slice(anchorIdx + 1)];
+  const coordStr = ordered.map(p => `${p.lon},${p.lat}`).join(';');
+  const url = `https://router.project-osrm.org/trip/v1/driving/${coordStr}?roundtrip=false&source=first&destination=any&overview=false`;
+  const res = await fetchWithTimeout(url, {}, 15000);
+  if (!res.ok) throw new Error(`OSRM returned ${res.status}`);
+  const data = await res.json();
+  if (data.code !== 'Ok' || !data.waypoints) throw new Error('OSRM optimization failed');
+  return data.waypoints
+    .map((wp, i) => ({ venue: ordered[i], order: wp.waypoint_index }))
+    .sort((a, b) => a.order - b.order)
+    .map(x => x.venue);
+}
+
 function updateRouteBar() {
   document.getElementById('route-count').textContent = `${selectedRoute.size} selected`;
   document.getElementById('route-btn').disabled = selectedRoute.size === 0;
 }
 
-document.getElementById('route-btn').onclick = () => {
+document.getElementById('route-btn').onclick = async () => {
   const chosen = venues.filter(v => selectedRoute.has(v.id));
   if (chosen.length === 0) return;
-  const dest = chosen[chosen.length - 1];
-  const waypoints = chosen.slice(0, -1).map(v => `${v.lat},${v.lon}`).join('|');
+  const btn = document.getElementById('route-btn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Optimizing route…';
+  let ordered;
+  try {
+    ordered = await fetchOptimizedOrder(chosen);
+  } catch (e) {
+    console.error('Route optimization failed, using straight-line fallback', e);
+    ordered = nearestNeighborOrder(chosen);
+  }
+  const dest = ordered[ordered.length - 1];
+  const waypoints = ordered.slice(0, -1).map(v => `${v.lat},${v.lon}`).join('|');
   let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lon}&travelmode=driving`;
   if (waypoints) url += `&waypoints=${encodeURIComponent(waypoints)}`;
   window.open(url, '_blank');
+  btn.disabled = false;
+  btn.textContent = originalText;
 };
 
 document.getElementById('clear-route-btn').onclick = () => {
