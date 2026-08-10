@@ -82,6 +82,7 @@ let hideNotInterested = false;
 let showChains = false;
 let priorityOnly = false;
 let needsFollowup = false;
+let visitedFilter = '';
 let centerPoint = null;
 let lastRouteOrder = [];
 let visitedToday = new Set();
@@ -333,6 +334,12 @@ function filteredVenues() {
     if (statusFilter && ov.status !== statusFilter) return false;
     if (hideNotInterested && ov.status === 'Not interested') return false;
     if (priorityOnly && !ov.priority) return false;
+    if (visitedFilter) {
+      const days = ov.lastVisited ? (Date.now() - new Date(ov.lastVisited).getTime()) / 86400000 : Infinity;
+      if (visitedFilter === 'last7' && !(days <= 7)) return false;
+      if (visitedFilter === 'last30' && !(days <= 30)) return false;
+      if (visitedFilter === 'stale30' && !(ov.lastVisited && days > 30)) return false;
+    }
     if (needsFollowup) {
       if (ov.status !== 'Interested') return false;
       const days = ov.lastVisited ? (Date.now() - new Date(ov.lastVisited).getTime()) / 86400000 : Infinity;
@@ -694,6 +701,7 @@ function radiusToZoom(miles) {
 
 document.getElementById('search-box').addEventListener('input', (e) => { searchTerm = e.target.value; renderAll(); });
 document.getElementById('status-filter').addEventListener('change', (e) => { statusFilter = e.target.value; renderAll(); });
+document.getElementById('visited-filter').addEventListener('change', (e) => { visitedFilter = e.target.value; renderAll(); });
 document.getElementById('hide-not-interested').addEventListener('change', (e) => { hideNotInterested = e.target.checked; renderAll(); });
 document.getElementById('show-chains').addEventListener('change', (e) => { showChains = e.target.checked; renderAll(); });
 document.getElementById('priority-only').addEventListener('change', (e) => { priorityOnly = e.target.checked; renderAll(); });
