@@ -64,6 +64,14 @@
           <input type="checkbox" id="show-chains">
           Include national chains
         </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="priority-only">
+          Priority leads only
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="needs-followup">
+          Needs follow-up (Interested, 14+ days)
+        </label>
       </div>
       <div class="filter-group">
         <input type="text" id="search-box" placeholder="Search name or address…">
@@ -80,6 +88,10 @@
         <span id="route-btn-label">Plan route in Google Maps</span>
       </button>
       <button id="clear-route-btn" class="btn-outline">Clear</button>
+      <button id="view-route-btn" class="btn-outline" disabled>
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Today's route
+      </button>
     </div>
 
     <div id="data-actions">
@@ -106,6 +118,15 @@
   <div id="detail-panel" class="overlay-panel">
     <button id="detail-close" class="modal-close">&times;</button>
     <div id="detail-content"></div>
+  </div>
+</div>
+
+<div id="route-overlay" class="overlay hidden">
+  <div id="route-panel" class="overlay-panel">
+    <button id="route-close" class="modal-close">&times;</button>
+    <h2>Today's Route</h2>
+    <p id="route-panel-sub">Stops in driving order — tick off as you go.</p>
+    <div id="route-list"></div>
   </div>
 </div>
 

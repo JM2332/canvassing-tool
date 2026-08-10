@@ -80,7 +80,13 @@ let searchTerm = '';
 let statusFilter = '';
 let hideNotInterested = false;
 let showChains = false;
+let priorityOnly = false;
+let needsFollowup = false;
 let centerPoint = null;
+let lastRouteOrder = [];
+let visitedToday = new Set();
+
+const FOLLOWUP_DAYS = 14;
 
 // ---------- persistence ----------
 
@@ -297,6 +303,7 @@ function iconFor(venue) {
   let cls = 'venue-marker';
   if (ov.status === 'Not interested') cls += ' not-interested';
   if (ov.status === 'Customer') cls += ' customer';
+  if (ov.priority) cls += ' priority';
   return L.divIcon({
     className: '',
     html: `<div class="${cls}" style="background:${color};width:16px;height:16px;"></div>`,
@@ -325,6 +332,12 @@ function filteredVenues() {
     const ov = getOverride(v.id);
     if (statusFilter && ov.status !== statusFilter) return false;
     if (hideNotInterested && ov.status === 'Not interested') return false;
+    if (priorityOnly && !ov.priority) return false;
+    if (needsFollowup) {
+      if (ov.status !== 'Interested') return false;
+      const days = ov.lastVisited ? (Date.now() - new Date(ov.lastVisited).getTime()) / 86400000 : Infinity;
+      if (days < FOLLOWUP_DAYS) return false;
+    }
     if (term && !(v.name.toLowerCase().includes(term) || v.address.toLowerCase().includes(term))) return false;
     return true;
   }).sort((a, b) => a.distance - b.distance);
@@ -370,7 +383,7 @@ function renderList() {
     row.innerHTML = `
       <input type="checkbox" ${selectedRoute.has(v.id) ? 'checked' : ''}>
       <div class="vr-main">
-        <div class="vr-name">${escapeHtml(v.name)}</div>
+        <div class="vr-name">${ov.priority ? '<span class="priority-star" title="Priority lead">★</span>' : ''}${escapeHtml(v.name)}</div>
         <div class="vr-addr">${escapeHtml(v.address || 'No address on record')}</div>
         <div class="vr-meta">
           <span class="pill" style="${pillStyle(CATEGORIES[v.category].color)}">${CATEGORIES[v.category].label}</span>
@@ -427,6 +440,7 @@ function openDetail(id) {
       <a href="https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lon}" target="_blank" rel="noopener">Directions</a>
       ${v.phone ? `<a href="tel:${v.phone.replace(/\s+/g, '')}">Call ${escapeHtml(v.phone)}</a>` : ''}
       ${v.website ? `<a href="${escapeHtml(v.website)}" target="_blank" rel="noopener">Website</a>` : ''}
+      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(v.name + ' ' + (v.address || ''))}" target="_blank" rel="noopener">Google reviews</a>
     </div>
     <div class="dc-row">
       <label>Status</label>
@@ -441,6 +455,9 @@ function openDetail(id) {
       <textarea id="dc-notes" placeholder="Who you spoke to, what they order now, follow-up plan...">${escapeHtml(ov.notes)}</textarea>
     </div>
     <div class="dc-row">
+      <label class="checkbox-row"><input type="checkbox" id="dc-priority" ${ov.priority ? 'checked' : ''}> Priority lead</label>
+    </div>
+    <div class="dc-row">
       <label class="checkbox-row"><input type="checkbox" id="dc-route" ${selectedRoute.has(id) ? 'checked' : ''}> Add to today's route</label>
     </div>
     <button id="save-detail-btn" class="btn-primary">Save</button>
@@ -450,6 +467,7 @@ function openDetail(id) {
       status: content.querySelector('#dc-status').value,
       lastVisited: content.querySelector('#dc-visited').value,
       notes: content.querySelector('#dc-notes').value,
+      priority: content.querySelector('#dc-priority').checked,
     });
     if (content.querySelector('#dc-route').checked) selectedRoute.add(id); else selectedRoute.delete(id);
     updateRouteBar();
@@ -519,6 +537,41 @@ function updateRouteBar() {
   document.getElementById('route-btn').disabled = selectedRoute.size === 0;
 }
 
+function renderRouteChecklist() {
+  const container = document.getElementById('route-list');
+  container.innerHTML = '';
+  lastRouteOrder.forEach((v, i) => {
+    const row = document.createElement('div');
+    row.className = 'route-stop' + (visitedToday.has(v.id) ? ' done' : '');
+    row.innerHTML = `
+      <input type="checkbox" ${visitedToday.has(v.id) ? 'checked' : ''}>
+      <span class="rs-num">${i + 1}</span>
+      <div class="rs-main">
+        <div class="rs-name">${escapeHtml(v.name)}</div>
+        <div class="rs-addr">${escapeHtml(v.address || 'No address on record')}</div>
+      </div>
+      <a class="rs-dir" href="https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lon}" target="_blank" rel="noopener" title="Directions">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5.5-2V4L9 6m0 14 6-2m-6 2V6m6 12 5.5 2V6L15 4m0 14V4m0 0L9 6"/></svg>
+      </a>`;
+    row.querySelector('input').addEventListener('change', (e) => {
+      if (e.target.checked) visitedToday.add(v.id); else visitedToday.delete(v.id);
+      row.classList.toggle('done', e.target.checked);
+    });
+    row.querySelector('.rs-main').addEventListener('click', () => openDetail(v.id));
+    container.appendChild(row);
+  });
+}
+
+document.getElementById('view-route-btn').onclick = () => {
+  if (!lastRouteOrder.length) return;
+  renderRouteChecklist();
+  document.getElementById('route-overlay').classList.remove('hidden');
+};
+document.getElementById('route-close').onclick = () => document.getElementById('route-overlay').classList.add('hidden');
+document.getElementById('route-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'route-overlay') e.currentTarget.classList.add('hidden');
+});
+
 document.getElementById('route-btn').onclick = async () => {
   const chosen = venues.filter(v => selectedRoute.has(v.id));
   if (chosen.length === 0) return;
@@ -539,6 +592,11 @@ document.getElementById('route-btn').onclick = async () => {
   let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lon}&travelmode=driving`;
   if (waypoints) url += `&waypoints=${encodeURIComponent(waypoints)}`;
   window.open(url, '_blank');
+  lastRouteOrder = ordered;
+  visitedToday.clear();
+  document.getElementById('view-route-btn').disabled = false;
+  renderRouteChecklist();
+  document.getElementById('route-overlay').classList.remove('hidden');
   btn.disabled = false;
   label.textContent = originalText;
 };
@@ -638,6 +696,8 @@ document.getElementById('search-box').addEventListener('input', (e) => { searchT
 document.getElementById('status-filter').addEventListener('change', (e) => { statusFilter = e.target.value; renderAll(); });
 document.getElementById('hide-not-interested').addEventListener('change', (e) => { hideNotInterested = e.target.checked; renderAll(); });
 document.getElementById('show-chains').addEventListener('change', (e) => { showChains = e.target.checked; renderAll(); });
+document.getElementById('priority-only').addEventListener('change', (e) => { priorityOnly = e.target.checked; renderAll(); });
+document.getElementById('needs-followup').addEventListener('change', (e) => { needsFollowup = e.target.checked; renderAll(); });
 
 // ---------- boot ----------
 
