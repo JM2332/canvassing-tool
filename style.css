@@ -449,7 +449,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 #login-overlay {
   position: fixed;
   inset: 0;
-  background: var(--brand);
+  background: linear-gradient(155deg, var(--brand) 0%, var(--brand-dark) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -460,33 +460,45 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   background: var(--panel);
   width: 320px;
   max-width: 90vw;
-  padding: 28px 24px;
-  border-radius: 8px;
+  padding: 30px 26px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   text-align: center;
+  animation: modal-in .18s ease;
 }
-#login-form h2 { margin: 0 0 4px; color: var(--text); }
-#login-form p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+#login-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--forest);
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+#login-form h2 { margin: 0 0 4px; font-size: 18px; font-weight: 700; color: var(--brand); }
+#login-form p { margin: 0 0 18px; color: var(--muted); font-size: 12.5px; }
 #login-form input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 9px 11px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
-  margin-bottom: 10px;
+  font-family: inherit;
+  margin-bottom: 12px;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
-#login-form button {
-  width: 100%;
-  padding: 8px;
-  border: none;
-  border-radius: 4px;
-  background: var(--brand);
-  color: var(--cream);
-  font-weight: 600;
-  cursor: pointer;
+#login-form input:focus {
+  outline: none;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(122, 139, 94, .18);
 }
-#login-form button:hover { background: var(--brand-dark); }
-#login-form button:disabled { opacity: .6; cursor: wait; }
-#login-error { color: #c0392b; font-size: 12px; margin-top: 8px; min-height: 14px; }
+#login-form .btn-primary { width: 100%; justify-content: center; }
+#login-error { color: var(--danger); font-size: 12px; margin-top: 10px; min-height: 14px; font-weight: 500; }
 
 @media (max-width: 768px) {
   body { height: auto; overflow: visible; }

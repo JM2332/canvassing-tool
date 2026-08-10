@@ -523,9 +523,10 @@ document.getElementById('route-btn').onclick = async () => {
   const chosen = venues.filter(v => selectedRoute.has(v.id));
   if (chosen.length === 0) return;
   const btn = document.getElementById('route-btn');
-  const originalText = btn.textContent;
+  const label = document.getElementById('route-btn-label');
+  const originalText = label.textContent;
   btn.disabled = true;
-  btn.textContent = 'Optimizing route…';
+  label.textContent = 'Optimizing route…';
   let ordered;
   try {
     ordered = await fetchOptimizedOrder(chosen);
@@ -539,7 +540,7 @@ document.getElementById('route-btn').onclick = async () => {
   if (waypoints) url += `&waypoints=${encodeURIComponent(waypoints)}`;
   window.open(url, '_blank');
   btn.disabled = false;
-  btn.textContent = originalText;
+  label.textContent = originalText;
 };
 
 document.getElementById('clear-route-btn').onclick = () => {
