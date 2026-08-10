@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KML Foodservice — Canvassing Planner</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231C3A2B'/%3E%3Ctext x='16' y='21' font-family='Arial,Helvetica,sans-serif' font-size='11' font-weight='700' fill='%23CDDC5C' text-anchor='middle'%3EKML%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -12,7 +13,10 @@
 <body>
 
 <header id="topbar">
-  <h1>KML Foodservice &mdash; Canvassing Planner</h1>
+  <div id="brand">
+    <span id="logo-mark">KML</span>
+    <h1>KML Foodservice <span class="subtitle">Canvassing Planner</span></h1>
+  </div>
   <form id="search-form">
     <label>Postcode / place
       <input type="text" id="postcode-input" value="S71 1HN" autocomplete="off">
@@ -20,7 +24,10 @@
     <label>Radius (miles)
       <input type="number" id="radius-input" value="25" min="1" max="60" step="1">
     </label>
-    <button type="submit" id="load-btn">Load venues</button>
+    <button type="submit" id="load-btn" class="btn-primary">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      Load venues
+    </button>
     <span id="load-status" aria-live="polite"></span>
   </form>
 </header>
@@ -35,11 +42,11 @@
             <option value="">All statuses</option>
           </select>
         </label>
-        <label>
+        <label class="checkbox-row">
           <input type="checkbox" id="hide-not-interested">
           Hide "Not interested"
         </label>
-        <label>
+        <label class="checkbox-row">
           <input type="checkbox" id="show-chains">
           Include national chains
         </label>
@@ -54,14 +61,26 @@
 
     <div id="route-bar">
       <span id="route-count">0 selected</span>
-      <button id="route-btn" disabled>Plan route in Google Maps</button>
-      <button id="clear-route-btn">Clear</button>
+      <button id="route-btn" class="btn-primary" disabled>
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5.5-2V4L9 6m0 14 6-2m-6 2V6m6 12 5.5 2V6L15 4m0 14V4m0 0L9 6"/></svg>
+        Plan route in Google Maps
+      </button>
+      <button id="clear-route-btn" class="btn-outline">Clear</button>
     </div>
 
     <div id="data-actions">
-      <button id="export-csv-btn">Export CSV</button>
-      <button id="export-json-btn">Backup (JSON)</button>
-      <button id="import-json-btn">Restore backup</button>
+      <button id="export-csv-btn" class="btn-outline">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Export CSV
+      </button>
+      <button id="export-json-btn" class="btn-outline">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Backup (JSON)
+      </button>
+      <button id="import-json-btn" class="btn-outline file-btn">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        Restore backup
+      </button>
       <input type="file" id="import-file-input" accept="application/json" style="display:none">
     </div>
   </aside>
@@ -69,9 +88,9 @@
   <main id="map"></main>
 </div>
 
-<div id="detail-overlay" class="hidden">
-  <div id="detail-panel">
-    <button id="detail-close">&times;</button>
+<div id="detail-overlay" class="overlay hidden">
+  <div id="detail-panel" class="overlay-panel">
+    <button id="detail-close" class="modal-close">&times;</button>
     <div id="detail-content"></div>
   </div>
 </div>

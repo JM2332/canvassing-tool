@@ -321,9 +321,9 @@ function renderList() {
         <div class="vr-name">${escapeHtml(v.name)}</div>
         <div class="vr-addr">${escapeHtml(v.address || 'No address on record')}</div>
         <div class="vr-meta">
-          <span class="badge" style="background:${CATEGORIES[v.category].color}">${CATEGORIES[v.category].label}</span>
-          <span class="badge" style="background:${STATUS_COLORS[ov.status]}">${ov.status}</span>
-          ${isChain(v) ? '<span class="badge" style="background:#22231F">Chain</span>' : ''}
+          <span class="pill" style="${pillStyle(CATEGORIES[v.category].color)}">${CATEGORIES[v.category].label}</span>
+          <span class="pill" style="${pillStyle(STATUS_COLORS[ov.status])}">${ov.status}</span>
+          ${isChain(v) ? `<span class="pill" style="${pillStyle('#22231F')}">Chain</span>` : ''}
           <span class="dist">${v.distance.toFixed(1)} mi</span>
         </div>
       </div>`;
@@ -355,6 +355,11 @@ function escapeHtml(s) {
   return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function pillStyle(hex) {
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  return `background:rgba(${r},${g},${b},.15);color:${hex}`;
+}
+
 // ---------- detail panel ----------
 
 function openDetail(id) {
@@ -384,9 +389,9 @@ function openDetail(id) {
       <textarea id="dc-notes" placeholder="Who you spoke to, what they order now, follow-up plan...">${escapeHtml(ov.notes)}</textarea>
     </div>
     <div class="dc-row">
-      <label><input type="checkbox" id="dc-route" ${selectedRoute.has(id) ? 'checked' : ''}> Add to today's route</label>
+      <label class="checkbox-row"><input type="checkbox" id="dc-route" ${selectedRoute.has(id) ? 'checked' : ''}> Add to today's route</label>
     </div>
-    <button id="save-detail-btn">Save</button>
+    <button id="save-detail-btn" class="btn-primary">Save</button>
   `;
   content.querySelector('#save-detail-btn').onclick = () => {
     setOverride(id, {
