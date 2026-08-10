@@ -9,8 +9,21 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 <link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
+
+<div id="login-overlay">
+  <form id="login-form">
+    <h2>KML Foodservice</h2>
+    <p>Enter the shared passcode to continue</p>
+    <input type="password" id="login-passcode" placeholder="Passcode" autocomplete="current-password" autofocus>
+    <button type="submit">Unlock</button>
+    <div id="login-error"></div>
+  </form>
+</div>
 
 <header id="topbar">
   <div id="brand">
