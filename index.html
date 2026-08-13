@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="style.css?v=202608101600">
+<link rel="stylesheet" href="style.css?v=202608131400">
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
@@ -102,6 +102,17 @@
       </button>
     </div>
 
+    <div id="saved-routes-bar">
+      <button id="save-route-btn" class="btn-outline" disabled>
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+        Save route
+      </button>
+      <button id="view-routes-btn" class="btn-outline">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+        Saved routes
+      </button>
+    </div>
+
     <div id="data-actions">
       <button id="export-csv-btn" class="btn-outline">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
@@ -138,8 +149,30 @@
   </div>
 </div>
 
+<div id="save-route-overlay" class="overlay hidden">
+  <div id="save-route-panel" class="overlay-panel">
+    <button id="save-route-close" class="modal-close">&times;</button>
+    <h2>Save Route</h2>
+    <p id="save-route-sub"></p>
+    <div class="dc-row">
+      <label>Route name</label>
+      <input type="text" id="save-route-name" placeholder="e.g. Monday — Barnsley North">
+    </div>
+    <button id="save-route-confirm" class="btn-primary">Save route</button>
+  </div>
+</div>
+
+<div id="routes-overlay" class="overlay hidden">
+  <div id="routes-panel" class="overlay-panel">
+    <button id="routes-close" class="modal-close">&times;</button>
+    <h2>Saved Routes</h2>
+    <p id="routes-panel-sub">Plan ahead, then tap Go when you're ready to head out.</p>
+    <div id="routes-list"></div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="app.js?v=202608101600"></script>
+<script src="app.js?v=202608131400"></script>
 </body>
 </html>

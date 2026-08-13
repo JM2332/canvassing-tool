@@ -333,6 +333,15 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 }
 #data-actions .btn-outline { flex: 1; justify-content: center; padding: 7px 8px; font-size: 11px; }
 
+#saved-routes-bar {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-soft);
+  padding: 10px 16px;
+  display: flex;
+  gap: 8px;
+}
+#saved-routes-bar .btn-outline { flex: 1; justify-content: center; }
+
 /* ---------- map ---------- */
 
 #map { flex: 1; }
@@ -497,6 +506,73 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .route-stop .rs-dir:hover { background: var(--bg-hover); color: var(--brand); }
 .route-stop.done { opacity: .5; background: var(--ok-bg); }
 .route-stop.done .rs-name { text-decoration: line-through; }
+
+/* ---------- save route / saved routes ---------- */
+
+#save-route-panel { width: 400px; }
+#save-route-panel h2 { margin: 0 24px 4px 0; font-size: 18px; font-weight: 700; color: var(--brand); }
+#save-route-sub { margin: 0 0 16px; color: var(--muted); font-size: 12.5px; }
+#save-route-panel .dc-row { margin-bottom: 16px; }
+#save-route-panel label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  margin-bottom: 5px;
+}
+#save-route-panel input[type=text] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+}
+#save-route-panel input[type=text]:focus {
+  outline: none;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(122, 139, 94, .18);
+}
+#save-route-confirm { width: 100%; justify-content: center; margin-top: 4px; }
+
+#routes-panel { width: 460px; }
+#routes-panel h2 { margin: 0 24px 4px 0; font-size: 18px; font-weight: 700; color: var(--brand); }
+#routes-panel-sub { margin: 0 0 14px; color: var(--muted); font-size: 12.5px; }
+
+#routes-list { display: flex; flex-direction: column; gap: 8px; }
+.routes-empty { font-size: 12.5px; color: var(--muted); text-align: center; padding: 20px 0; }
+
+.route-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.route-card .rc-main { flex: 1; min-width: 0; }
+.route-card .rc-name { font-weight: 700; font-size: 13.5px; color: var(--text); }
+.route-card .rc-meta { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.route-card .rc-go { flex-shrink: 0; padding: 7px 14px; }
+.route-card .rc-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--danger);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s ease;
+}
+.route-card .rc-delete:hover { background: var(--danger-bg); }
 
 #login-overlay {
   position: fixed;

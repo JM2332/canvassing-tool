@@ -69,6 +69,7 @@ const STATUS_COLORS = {
 
 const CACHE_KEY = 'canvass_cache_v1';
 const OVERRIDES_KEY = 'canvass_overrides_v1';
+const SAVED_ROUTES_KEY = 'canvass_saved_routes_v1';
 
 let venues = [];          // raw venue objects from last load
 let overrides = loadOverrides();
@@ -86,6 +87,7 @@ let visitedFilter = '';
 let centerPoint = null;
 let lastRouteOrder = [];
 let visitedToday = new Set();
+let savedRoutes = loadSavedRoutesCache();
 
 const FOLLOWUP_DAYS = 14;
 
@@ -150,6 +152,42 @@ function loadCache() {
 }
 function saveCache(payload) {
   localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+}
+
+// ---------- saved routes (Firestore) ----------
+
+function loadSavedRoutesCache() {
+  try { return JSON.parse(localStorage.getItem(SAVED_ROUTES_KEY)) || []; }
+  catch (e) { return []; }
+}
+function saveSavedRoutesCache() {
+  localStorage.setItem(SAVED_ROUTES_KEY, JSON.stringify(savedRoutes));
+}
+
+let unsubscribeSavedRoutes = null;
+
+function subscribeSavedRoutes() {
+  if (unsubscribeSavedRoutes) unsubscribeSavedRoutes();
+  unsubscribeSavedRoutes = db.collection('routes').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+    savedRoutes = snapshot.docs.map(doc => Object.assign({ id: doc.id }, doc.data()));
+    saveSavedRoutesCache();
+    renderSavedRoutesList();
+  }, err => console.error('Saved routes subscription failed', err));
+}
+
+async function saveCurrentSelectionAsRoute(name) {
+  if (!auth.currentUser) return;
+  const stops = venues.filter(v => selectedRoute.has(v.id));
+  await db.collection('routes').add({
+    name,
+    stops,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
+async function deleteSavedRoute(routeId) {
+  if (!auth.currentUser) return;
+  await db.collection('routes').doc(routeId).delete();
 }
 
 // ---------- geo helpers ----------
@@ -435,7 +473,7 @@ function pillStyle(hex) {
 // ---------- detail panel ----------
 
 function openDetail(id) {
-  const v = venues.find(x => x.id === id);
+  const v = venues.find(x => x.id === id) || lastRouteOrder.find(x => x.id === id);
   if (!v) return;
   const ov = getOverride(id);
   const overlay = document.getElementById('detail-overlay');
@@ -542,6 +580,7 @@ async function fetchOptimizedOrder(points) {
 function updateRouteBar() {
   document.getElementById('route-count').textContent = `${selectedRoute.size} selected`;
   document.getElementById('route-btn').disabled = selectedRoute.size === 0;
+  document.getElementById('save-route-btn').disabled = selectedRoute.size === 0;
 }
 
 function renderRouteChecklist() {
@@ -579,20 +618,95 @@ document.getElementById('route-overlay').addEventListener('click', (e) => {
   if (e.target.id === 'route-overlay') e.currentTarget.classList.add('hidden');
 });
 
-document.getElementById('route-btn').onclick = async () => {
-  const chosen = venues.filter(v => selectedRoute.has(v.id));
-  if (chosen.length === 0) return;
-  const btn = document.getElementById('route-btn');
-  const label = document.getElementById('route-btn-label');
-  const originalText = label.textContent;
+// ---------- save route ----------
+
+document.getElementById('save-route-btn').onclick = () => {
+  if (selectedRoute.size === 0) return;
+  document.getElementById('save-route-sub').textContent = `Saving ${selectedRoute.size} selected venue${selectedRoute.size === 1 ? '' : 's'} as a named route.`;
+  document.getElementById('save-route-name').value = '';
+  document.getElementById('save-route-overlay').classList.remove('hidden');
+  document.getElementById('save-route-name').focus();
+};
+document.getElementById('save-route-close').onclick = () => document.getElementById('save-route-overlay').classList.add('hidden');
+document.getElementById('save-route-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'save-route-overlay') e.currentTarget.classList.add('hidden');
+});
+document.getElementById('save-route-confirm').onclick = async () => {
+  const nameInput = document.getElementById('save-route-name');
+  const name = nameInput.value.trim();
+  if (!name) { nameInput.focus(); return; }
+  const btn = document.getElementById('save-route-confirm');
   btn.disabled = true;
-  label.textContent = 'Optimizing route…';
+  try {
+    await saveCurrentSelectionAsRoute(name);
+    document.getElementById('save-route-overlay').classList.add('hidden');
+  } catch (e) {
+    console.error('Failed to save route', e);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// ---------- saved routes list ----------
+
+function renderSavedRoutesList() {
+  const container = document.getElementById('routes-list');
+  if (!container) return;
+  container.innerHTML = '';
+  if (savedRoutes.length === 0) {
+    container.innerHTML = '<p class="routes-empty">No saved routes yet. Tick venues, then "Save route" to plan ahead.</p>';
+    return;
+  }
+  savedRoutes.forEach(route => {
+    const card = document.createElement('div');
+    card.className = 'route-card';
+    const stopCount = (route.stops || []).length;
+    const dateLabel = route.createdAt && route.createdAt.toDate ? route.createdAt.toDate().toLocaleDateString() : '';
+    card.innerHTML = `
+      <div class="rc-main">
+        <div class="rc-name">${escapeHtml(route.name)}</div>
+        <div class="rc-meta">${stopCount} stop${stopCount === 1 ? '' : 's'}${dateLabel ? ' · saved ' + dateLabel : ''}</div>
+      </div>
+      <button class="btn-primary rc-go">Go</button>
+      <button class="rc-delete" title="Delete route">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+      </button>`;
+    card.querySelector('.rc-go').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      if (!stopCount) return;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Optimizing…';
+      document.getElementById('routes-overlay').classList.add('hidden');
+      await planAndShowRoute(route.stops);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    });
+    card.querySelector('.rc-delete').addEventListener('click', async () => {
+      if (!confirm(`Delete the saved route "${route.name}"?`)) return;
+      try { await deleteSavedRoute(route.id); }
+      catch (e) { console.error('Failed to delete route', e); }
+    });
+    container.appendChild(card);
+  });
+}
+
+document.getElementById('view-routes-btn').onclick = () => {
+  renderSavedRoutesList();
+  document.getElementById('routes-overlay').classList.remove('hidden');
+};
+document.getElementById('routes-close').onclick = () => document.getElementById('routes-overlay').classList.add('hidden');
+document.getElementById('routes-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'routes-overlay') e.currentTarget.classList.add('hidden');
+});
+
+async function planAndShowRoute(stops) {
   let ordered;
   try {
-    ordered = await fetchOptimizedOrder(chosen);
+    ordered = await fetchOptimizedOrder(stops);
   } catch (e) {
     console.error('Route optimization failed, using straight-line fallback', e);
-    ordered = nearestNeighborOrder(chosen);
+    ordered = nearestNeighborOrder(stops);
   }
   const dest = ordered[ordered.length - 1];
   const waypoints = ordered.slice(0, -1).map(v => `${v.lat},${v.lon}`).join('|');
@@ -604,6 +718,17 @@ document.getElementById('route-btn').onclick = async () => {
   document.getElementById('view-route-btn').disabled = false;
   renderRouteChecklist();
   document.getElementById('route-overlay').classList.remove('hidden');
+}
+
+document.getElementById('route-btn').onclick = async () => {
+  const chosen = venues.filter(v => selectedRoute.has(v.id));
+  if (chosen.length === 0) return;
+  const btn = document.getElementById('route-btn');
+  const label = document.getElementById('route-btn-label');
+  const originalText = label.textContent;
+  btn.disabled = true;
+  label.textContent = 'Optimizing route…';
+  await planAndShowRoute(chosen);
   btn.disabled = false;
   label.textContent = originalText;
 };
@@ -759,8 +884,10 @@ auth.onAuthStateChanged(user => {
       boot();
     }
     subscribeOverrides();
+    subscribeSavedRoutes();
   } else {
     loginOverlay.classList.remove('hidden');
     if (unsubscribeOverrides) { unsubscribeOverrides(); unsubscribeOverrides = null; }
+    if (unsubscribeSavedRoutes) { unsubscribeSavedRoutes(); unsubscribeSavedRoutes = null; }
   }
 });
