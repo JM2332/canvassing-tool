@@ -640,6 +640,42 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 #edit-add-selected-btn { width: 100%; justify-content: center; margin-top: 12px; }
 #edit-route-save { width: 100%; justify-content: center; margin-top: 10px; }
 
+/* ---------- add venue ---------- */
+
+#add-venue-panel { width: 420px; }
+#add-venue-panel h2 { margin: 0 24px 4px 0; font-size: 18px; font-weight: 700; color: var(--brand); }
+#add-venue-sub { margin: 0 0 16px; color: var(--muted); font-size: 12.5px; }
+#add-venue-panel .dc-row { margin-bottom: 14px; }
+#add-venue-panel label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  margin-bottom: 5px;
+}
+#add-venue-panel input[type=text], #add-venue-panel select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--panel);
+}
+#add-venue-panel input[type=text]:focus, #add-venue-panel select:focus {
+  outline: none;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(122, 139, 94, .18);
+}
+#add-venue-locate { width: 100%; justify-content: center; margin-bottom: 8px; }
+#add-venue-location-status { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+#add-venue-save { width: 100%; justify-content: center; margin-top: 4px; }
+.dc-delete-venue { width: 100%; justify-content: center; margin-top: 8px; color: var(--danger); border-color: var(--danger-bg); }
+.dc-delete-venue:hover { background: var(--danger-bg); }
+
 #login-overlay {
   position: fixed;
   inset: 0;

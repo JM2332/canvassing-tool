@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="style.css?v=202608131645">
+<link rel="stylesheet" href="style.css?v=202608131830">
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
@@ -126,6 +126,10 @@
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
         Restore backup
       </button>
+      <button id="add-venue-btn" class="btn-outline">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add venue
+      </button>
       <input type="file" id="import-file-input" accept="application/json" style="display:none">
     </div>
   </aside>
@@ -191,8 +195,37 @@
   </div>
 </div>
 
+<div id="add-venue-overlay" class="overlay hidden">
+  <div id="add-venue-panel" class="overlay-panel">
+    <button id="add-venue-close" class="modal-close">&times;</button>
+    <h2>Add Venue</h2>
+    <p id="add-venue-sub">For a place that hasn't shown up on the map.</p>
+    <div class="dc-row">
+      <label>Name</label>
+      <input type="text" id="add-venue-name" placeholder="e.g. The Corner Cafe">
+    </div>
+    <div class="dc-row">
+      <label>Type</label>
+      <select id="add-venue-category"></select>
+    </div>
+    <div class="dc-row">
+      <label>Address</label>
+      <input type="text" id="add-venue-address" placeholder="Street, town, postcode">
+    </div>
+    <div class="dc-row">
+      <label>Location</label>
+      <button id="add-venue-locate" class="btn-outline" type="button">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="6"/></svg>
+        Use my current location
+      </button>
+      <div id="add-venue-location-status">No location set — tap above, or leave blank to use the address instead.</div>
+    </div>
+    <button id="add-venue-save" class="btn-primary">Add venue</button>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="app.js?v=202608131645"></script>
+<script src="app.js?v=202608131830"></script>
 </body>
 </html>

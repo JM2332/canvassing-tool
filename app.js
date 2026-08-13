@@ -71,6 +71,7 @@ const CACHE_KEY = 'canvass_cache_v1';
 const OVERRIDES_KEY = 'canvass_overrides_v1';
 const SAVED_ROUTES_KEY = 'canvass_saved_routes_v1';
 const LAST_ROUTE_KEY = 'canvass_last_route_v1';
+const MANUAL_VENUES_KEY = 'canvass_manual_venues_v1';
 
 let venues = [];          // raw venue objects from last load
 let overrides = loadOverrides();
@@ -90,6 +91,7 @@ let lastRouteOrder = [];
 let visitedToday = new Set();
 loadLastRouteCache();
 let savedRoutes = loadSavedRoutesCache();
+let manualVenues = loadManualVenuesCache();
 
 const FOLLOWUP_DAYS = 14;
 
@@ -202,6 +204,54 @@ async function saveCurrentSelectionAsRoute(name) {
 async function deleteSavedRoute(routeId) {
   if (!auth.currentUser) return;
   await db.collection('routes').doc(routeId).delete();
+}
+
+// ---------- manual venues (Firestore) ----------
+
+function loadManualVenuesCache() {
+  try { return JSON.parse(localStorage.getItem(MANUAL_VENUES_KEY)) || []; }
+  catch (e) { return []; }
+}
+function saveManualVenuesCache() {
+  localStorage.setItem(MANUAL_VENUES_KEY, JSON.stringify(manualVenues));
+}
+
+let unsubscribeManualVenues = null;
+
+function subscribeManualVenues() {
+  if (unsubscribeManualVenues) unsubscribeManualVenues();
+  unsubscribeManualVenues = db.collection('manualVenues').onSnapshot(snapshot => {
+    manualVenues = snapshot.docs.map(doc => doc.data());
+    saveManualVenuesCache();
+    venues = mergeManualVenues(venues.filter(v => !v.id.startsWith('manual/')));
+    renderAll();
+  }, err => console.error('Manual venues subscription failed', err));
+}
+
+function mergeManualVenues(baseVenues) {
+  const baseIds = new Set(baseVenues.map(v => v.id));
+  const extra = manualVenues
+    .filter(v => !baseIds.has(v.id))
+    .map(v => Object.assign({}, v, {
+      distance: centerPoint ? haversineMiles(centerPoint.lat, centerPoint.lon, v.lat, v.lon) : (v.distance || 0),
+    }));
+  return baseVenues.concat(extra);
+}
+
+async function addManualVenue({ name, category, address, lat, lon }) {
+  if (!auth.currentUser) return;
+  const id = `manual/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const venue = {
+    id, name, category, lat, lon,
+    address: address || '', brand: '', operator: '', phone: '', website: '', opening_hours: '',
+  };
+  await db.collection('manualVenues').doc(firestoreDocId(id)).set(venue);
+  return venue;
+}
+
+async function deleteManualVenue(id) {
+  if (!auth.currentUser) return;
+  await db.collection('manualVenues').doc(firestoreDocId(id)).delete();
 }
 
 // ---------- geo helpers ----------
@@ -448,6 +498,7 @@ function renderList() {
           <span class="pill" style="${pillStyle(CATEGORIES[v.category].color)}">${CATEGORIES[v.category].label}</span>
           <span class="pill" style="${pillStyle(STATUS_COLORS[ov.status])}">${ov.status}</span>
           ${isChain(v) ? `<span class="pill" style="${pillStyle('#22231F')}">Chain</span>` : ''}
+          ${v.id.startsWith('manual/') ? `<span class="pill" style="${pillStyle('#7A8B5E')}">Manually added</span>` : ''}
           <span class="dist">${v.distance.toFixed(1)} mi</span>
         </div>
       </div>`;
@@ -534,7 +585,24 @@ function openDetail(id) {
       <label class="checkbox-row"><input type="checkbox" id="dc-route" ${selectedRoute.has(id) ? 'checked' : ''}> Add to today's route</label>
     </div>
     <button id="save-detail-btn" class="btn-primary">Save</button>
+    ${v.id.startsWith('manual/') ? '<button id="delete-venue-btn" class="btn-outline dc-delete-venue">Delete this manually-added venue</button>' : ''}
   `;
+  if (v.id.startsWith('manual/')) {
+    content.querySelector('#delete-venue-btn').onclick = async () => {
+      if (!confirm(`Delete "${v.name}"? This can't be undone.`)) return;
+      try {
+        await deleteManualVenue(v.id);
+        manualVenues = manualVenues.filter(x => x.id !== v.id);
+        venues = venues.filter(x => x.id !== v.id);
+        selectedRoute.delete(v.id);
+        updateRouteBar();
+        renderAll();
+        closeDetailOverlay();
+      } catch (e) {
+        console.error('Failed to delete venue', e);
+      }
+    };
+  }
   content.querySelector('#save-detail-btn').onclick = () => {
     setOverride(id, {
       status: content.querySelector('#dc-status').value,
@@ -889,6 +957,70 @@ function downloadBlob(content, filename, mime) {
   URL.revokeObjectURL(a.href);
 }
 
+// ---------- add venue ----------
+
+let addVenueLocation = null;
+
+function populateAddVenueCategories() {
+  const sel = document.getElementById('add-venue-category');
+  sel.innerHTML = Object.entries(CATEGORIES).map(([key, cfg]) => `<option value="${key}">${cfg.label}</option>`).join('');
+}
+
+document.getElementById('add-venue-btn').onclick = () => {
+  addVenueLocation = null;
+  document.getElementById('add-venue-name').value = '';
+  document.getElementById('add-venue-address').value = '';
+  document.getElementById('add-venue-location-status').textContent = 'No location set — tap above, or leave blank to use the address instead.';
+  document.getElementById('add-venue-overlay').classList.remove('hidden');
+};
+document.getElementById('add-venue-close').onclick = () => document.getElementById('add-venue-overlay').classList.add('hidden');
+document.getElementById('add-venue-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'add-venue-overlay') e.currentTarget.classList.add('hidden');
+});
+
+document.getElementById('add-venue-locate').onclick = () => {
+  const statusEl = document.getElementById('add-venue-location-status');
+  if (!navigator.geolocation) { statusEl.textContent = 'Location isn\'t available on this device/browser — type the address instead.'; return; }
+  statusEl.textContent = 'Getting your location…';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      addVenueLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      statusEl.textContent = `Location set (accurate to ~${Math.round(pos.coords.accuracy)}m).`;
+    },
+    err => { statusEl.textContent = `Couldn't get your location (${err.message}) — type the address instead.`; },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+};
+
+document.getElementById('add-venue-save').onclick = async () => {
+  const nameInput = document.getElementById('add-venue-name');
+  const name = nameInput.value.trim();
+  const category = document.getElementById('add-venue-category').value;
+  const address = document.getElementById('add-venue-address').value.trim();
+  const statusEl = document.getElementById('add-venue-location-status');
+  if (!name) { nameInput.focus(); return; }
+  const btn = document.getElementById('add-venue-save');
+  btn.disabled = true;
+  try {
+    let loc = addVenueLocation;
+    if (!loc) {
+      if (!address) { statusEl.textContent = 'Set a location or enter an address.'; return; }
+      statusEl.textContent = 'Locating address…';
+      loc = await geocodePostcode(address);
+    }
+    const venue = await addManualVenue({ name, category, address, lat: loc.lat, lon: loc.lon });
+    manualVenues = manualVenues.filter(v => v.id !== venue.id).concat(venue);
+    venues = mergeManualVenues(venues.filter(v => !v.id.startsWith('manual/')));
+    renderAll();
+    document.getElementById('add-venue-overlay').classList.add('hidden');
+  } catch (e) {
+    console.error('Failed to add venue', e);
+    statusEl.textContent = 'Could not add that venue: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+};
+
 // ---------- load flow ----------
 
 function setStatus(msg) {
@@ -906,7 +1038,7 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
     centerPoint = await geocodePostcode(postcode);
     map.setView([centerPoint.lat, centerPoint.lon], radiusToZoom(radius));
     setStatus(`Querying OpenStreetMap within ${radius} mi (this can take up to a minute for large radii)…`);
-    venues = await fetchVenues(centerPoint, radius);
+    venues = mergeManualVenues(await fetchVenues(centerPoint, radius));
     saveCache({ venues, center: centerPoint, radius, savedAt: new Date().toISOString() });
     setStatus(`Loaded ${venues.length} venues, saved ${new Date().toLocaleTimeString()}.`);
     renderAll();
@@ -940,12 +1072,13 @@ function boot() {
   initMap();
   renderTypeFilters();
   renderStatusFilterOptions();
+  populateAddVenueCategories();
   updateRouteBar();
 
   const cached = loadCache();
   if (cached && cached.venues && cached.venues.length) {
-    venues = cached.venues;
     centerPoint = cached.center;
+    venues = mergeManualVenues(cached.venues);
     document.getElementById('radius-input').value = cached.radius;
     if (centerPoint) map.setView([centerPoint.lat, centerPoint.lon], radiusToZoom(cached.radius));
     setStatus(`Showing cached data from ${new Date(cached.savedAt).toLocaleString()}. Click "Load venues" to refresh.`);
@@ -987,9 +1120,11 @@ auth.onAuthStateChanged(user => {
     }
     subscribeOverrides();
     subscribeSavedRoutes();
+    subscribeManualVenues();
   } else {
     loginOverlay.classList.remove('hidden');
     if (unsubscribeOverrides) { unsubscribeOverrides(); unsubscribeOverrides = null; }
     if (unsubscribeSavedRoutes) { unsubscribeSavedRoutes(); unsubscribeSavedRoutes = null; }
+    if (unsubscribeManualVenues) { unsubscribeManualVenues(); unsubscribeManualVenues = null; }
   }
 });
