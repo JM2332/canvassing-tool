@@ -70,6 +70,7 @@ const STATUS_COLORS = {
 const CACHE_KEY = 'canvass_cache_v1';
 const OVERRIDES_KEY = 'canvass_overrides_v1';
 const SAVED_ROUTES_KEY = 'canvass_saved_routes_v1';
+const LAST_ROUTE_KEY = 'canvass_last_route_v1';
 
 let venues = [];          // raw venue objects from last load
 let overrides = loadOverrides();
@@ -87,6 +88,7 @@ let visitedFilter = '';
 let centerPoint = null;
 let lastRouteOrder = [];
 let visitedToday = new Set();
+loadLastRouteCache();
 let savedRoutes = loadSavedRoutesCache();
 
 const FOLLOWUP_DAYS = 14;
@@ -152,6 +154,18 @@ function loadCache() {
 }
 function saveCache(payload) {
   localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+}
+
+function loadLastRouteCache() {
+  try {
+    const data = JSON.parse(localStorage.getItem(LAST_ROUTE_KEY));
+    if (!data) return;
+    lastRouteOrder = data.order || [];
+    visitedToday = new Set(data.visited || []);
+  } catch (e) { /* ignore */ }
+}
+function saveLastRouteCache() {
+  localStorage.setItem(LAST_ROUTE_KEY, JSON.stringify({ order: lastRouteOrder, visited: Array.from(visitedToday) }));
 }
 
 // ---------- saved routes (Firestore) ----------
@@ -586,6 +600,10 @@ function updateRouteBar() {
 function renderRouteChecklist() {
   const container = document.getElementById('route-list');
   container.innerHTML = '';
+  if (lastRouteOrder.length === 0) {
+    container.innerHTML = '<p class="routes-empty">No route planned yet. Tick venues and tap "Maps", or open Saved Routes and tap "Go".</p>';
+    return;
+  }
   lastRouteOrder.forEach((v, i) => {
     const row = document.createElement('div');
     row.className = 'route-stop' + (visitedToday.has(v.id) ? ' done' : '');
@@ -602,6 +620,7 @@ function renderRouteChecklist() {
     row.querySelector('input').addEventListener('change', (e) => {
       if (e.target.checked) visitedToday.add(v.id); else visitedToday.delete(v.id);
       row.classList.toggle('done', e.target.checked);
+      saveLastRouteCache();
     });
     row.querySelector('.rs-main').addEventListener('click', () => openDetail(v.id));
     container.appendChild(row);
@@ -609,7 +628,6 @@ function renderRouteChecklist() {
 }
 
 document.getElementById('view-route-btn').onclick = () => {
-  if (!lastRouteOrder.length) return;
   renderRouteChecklist();
   document.getElementById('route-overlay').classList.remove('hidden');
 };
@@ -668,9 +686,13 @@ function renderSavedRoutesList() {
         <div class="rc-meta">${stopCount} stop${stopCount === 1 ? '' : 's'}${dateLabel ? ' · saved ' + dateLabel : ''}</div>
       </div>
       <button class="btn-primary rc-go">Go</button>
+      <button class="rc-edit btn-outline" title="Edit route">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </button>
       <button class="rc-delete" title="Delete route">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
       </button>`;
+    card.querySelector('.rc-edit').addEventListener('click', () => openEditRoute(route));
     card.querySelector('.rc-go').addEventListener('click', async (e) => {
       const btn = e.currentTarget;
       if (!stopCount) return;
@@ -700,6 +722,72 @@ document.getElementById('routes-overlay').addEventListener('click', (e) => {
   if (e.target.id === 'routes-overlay') e.currentTarget.classList.add('hidden');
 });
 
+// ---------- edit route ----------
+
+let editingRouteId = null;
+let editingStops = [];
+
+function openEditRoute(route) {
+  editingRouteId = route.id;
+  editingStops = (route.stops || []).slice();
+  document.getElementById('edit-route-name').value = route.name;
+  renderEditStops();
+  document.getElementById('routes-overlay').classList.add('hidden');
+  document.getElementById('edit-route-overlay').classList.remove('hidden');
+}
+
+function renderEditStops() {
+  const container = document.getElementById('edit-stops-list');
+  container.innerHTML = '';
+  if (editingStops.length === 0) {
+    container.innerHTML = '<p class="routes-empty">No stops yet — add some below.</p>';
+    return;
+  }
+  editingStops.forEach((v, i) => {
+    const row = document.createElement('div');
+    row.className = 'edit-stop-row';
+    row.innerHTML = `
+      <div class="es-main">
+        <div class="es-name">${escapeHtml(v.name)}</div>
+        <div class="es-addr">${escapeHtml(v.address || 'No address on record')}</div>
+      </div>
+      <button class="es-remove" title="Remove stop">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>`;
+    row.querySelector('.es-remove').addEventListener('click', () => {
+      editingStops.splice(i, 1);
+      renderEditStops();
+    });
+    container.appendChild(row);
+  });
+}
+
+document.getElementById('edit-add-selected-btn').onclick = () => {
+  const toAdd = venues.filter(v => selectedRoute.has(v.id) && !editingStops.some(s => s.id === v.id));
+  editingStops = editingStops.concat(toAdd);
+  renderEditStops();
+};
+
+document.getElementById('edit-route-save').onclick = async () => {
+  const nameInput = document.getElementById('edit-route-name');
+  const name = nameInput.value.trim();
+  if (!name) { nameInput.focus(); return; }
+  const btn = document.getElementById('edit-route-save');
+  btn.disabled = true;
+  try {
+    await db.collection('routes').doc(editingRouteId).update({ name, stops: editingStops });
+    document.getElementById('edit-route-overlay').classList.add('hidden');
+  } catch (e) {
+    console.error('Failed to save route edits', e);
+  } finally {
+    btn.disabled = false;
+  }
+};
+document.getElementById('edit-route-close').onclick = () => document.getElementById('edit-route-overlay').classList.add('hidden');
+document.getElementById('edit-route-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'edit-route-overlay') e.currentTarget.classList.add('hidden');
+});
+
 async function planAndShowRoute(stops) {
   let ordered;
   try {
@@ -715,7 +803,7 @@ async function planAndShowRoute(stops) {
   window.open(url, '_blank');
   lastRouteOrder = ordered;
   visitedToday.clear();
-  document.getElementById('view-route-btn').disabled = false;
+  saveLastRouteCache();
   renderRouteChecklist();
   document.getElementById('route-overlay').classList.remove('hidden');
 }

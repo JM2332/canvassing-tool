@@ -558,6 +558,13 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .route-card .rc-name { font-weight: 700; font-size: 13.5px; color: var(--text); }
 .route-card .rc-meta { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
 .route-card .rc-go { flex-shrink: 0; padding: 7px 14px; }
+.route-card .rc-edit {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+}
 .route-card .rc-delete {
   display: inline-flex;
   align-items: center;
@@ -573,6 +580,65 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   transition: background .15s ease;
 }
 .route-card .rc-delete:hover { background: var(--danger-bg); }
+
+/* ---------- edit route ---------- */
+
+#edit-route-panel { width: 440px; }
+#edit-route-panel h2 { margin: 0 24px 14px 0; font-size: 18px; font-weight: 700; color: var(--brand); }
+#edit-route-panel .dc-row { margin-bottom: 14px; }
+#edit-route-panel label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  margin-bottom: 5px;
+}
+#edit-route-panel input[type=text] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+}
+#edit-route-panel input[type=text]:focus {
+  outline: none;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(122, 139, 94, .18);
+}
+#edit-stops-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.edit-stop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.edit-stop-row .es-main { flex: 1; min-width: 0; }
+.edit-stop-row .es-name { font-weight: 700; font-size: 12.5px; color: var(--text); }
+.edit-stop-row .es-addr { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.edit-stop-row .es-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: none;
+  color: var(--danger);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s ease;
+}
+.edit-stop-row .es-remove:hover { background: var(--danger-bg); }
+#edit-add-selected-btn { width: 100%; justify-content: center; margin-top: 12px; }
+#edit-route-save { width: 100%; justify-content: center; margin-top: 10px; }
 
 #login-overlay {
   position: fixed;

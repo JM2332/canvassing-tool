@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="style.css?v=202608131400">
+<link rel="stylesheet" href="style.css?v=202608131530">
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
@@ -96,7 +96,7 @@
         <span id="route-btn-label">Maps</span>
       </button>
       <button id="clear-route-btn" class="btn-outline">Clear</button>
-      <button id="view-route-btn" class="btn-outline" disabled>
+      <button id="view-route-btn" class="btn-outline">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Today's route
       </button>
@@ -171,8 +171,28 @@
   </div>
 </div>
 
+<div id="edit-route-overlay" class="overlay hidden">
+  <div id="edit-route-panel" class="overlay-panel">
+    <button id="edit-route-close" class="modal-close">&times;</button>
+    <h2>Edit Route</h2>
+    <div class="dc-row">
+      <label>Route name</label>
+      <input type="text" id="edit-route-name">
+    </div>
+    <div class="dc-row">
+      <label>Stops</label>
+      <div id="edit-stops-list"></div>
+    </div>
+    <button id="edit-add-selected-btn" class="btn-outline" type="button">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      Add venues currently ticked in the list
+    </button>
+    <button id="edit-route-save" class="btn-primary">Save changes</button>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="app.js?v=202608131400"></script>
+<script src="app.js?v=202608131530"></script>
 </body>
 </html>
