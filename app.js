@@ -486,12 +486,26 @@ function pillStyle(hex) {
 
 // ---------- detail panel ----------
 
+let reopenRouteOverlayAfterDetail = false;
+
+function closeDetailOverlay() {
+  document.getElementById('detail-overlay').classList.add('hidden');
+  if (reopenRouteOverlayAfterDetail) {
+    reopenRouteOverlayAfterDetail = false;
+    renderRouteChecklist();
+    document.getElementById('route-overlay').classList.remove('hidden');
+  }
+}
+
 function openDetail(id) {
   const v = venues.find(x => x.id === id) || lastRouteOrder.find(x => x.id === id);
   if (!v) return;
   const ov = getOverride(id);
   const overlay = document.getElementById('detail-overlay');
   const content = document.getElementById('detail-content');
+  const routeOverlay = document.getElementById('route-overlay');
+  reopenRouteOverlayAfterDetail = !routeOverlay.classList.contains('hidden');
+  routeOverlay.classList.add('hidden');
   content.innerHTML = `
     <h2>${escapeHtml(v.name)}</h2>
     <div class="dc-addr">${escapeHtml(v.address || 'No address on record')} &middot; ${v.distance.toFixed(1)} mi away${isChain(v) ? ' &middot; <strong>Chain</strong>' : ''}</div>
@@ -530,16 +544,16 @@ function openDetail(id) {
     });
     if (content.querySelector('#dc-route').checked) selectedRoute.add(id); else selectedRoute.delete(id);
     updateRouteBar();
-    overlay.classList.add('hidden');
     renderAll();
+    closeDetailOverlay();
   };
   overlay.classList.remove('hidden');
   map.setView([v.lat, v.lon], Math.max(map.getZoom(), 15));
 }
 
-document.getElementById('detail-close').onclick = () => document.getElementById('detail-overlay').classList.add('hidden');
+document.getElementById('detail-close').onclick = () => closeDetailOverlay();
 document.getElementById('detail-overlay').addEventListener('click', (e) => {
-  if (e.target.id === 'detail-overlay') e.currentTarget.classList.add('hidden');
+  if (e.target.id === 'detail-overlay') closeDetailOverlay();
 });
 
 // ---------- route ----------
