@@ -131,20 +131,31 @@ let unsubscribeOverrides = null;
 function subscribeOverrides() {
   if (unsubscribeOverrides) unsubscribeOverrides();
   unsubscribeOverrides = db.collection('overrides').onSnapshot(snapshot => {
+    /* updatedAt (serverTimestamp()) resolves from a pending local value to
+       the real one moments after every write — a genuine field change, so
+       this fires a second time for data that's otherwise identical. A full
+       renderAll() on that spurious echo is disruptive for no reason, so
+       only re-render when something actually shown changed. */
+    let changed = false;
     snapshot.docChanges().forEach(change => {
       const data = change.doc.data();
       if (!data.venueId) return;
       if (change.type === 'removed') {
-        delete overrides[data.venueId];
-      } else {
-        overrides[data.venueId] = {
-          status: data.status || 'Not contacted',
-          notes: data.notes || '',
-          lastVisited: data.lastVisited || '',
-          priority: !!data.priority,
-        };
+        if (overrides[data.venueId]) { delete overrides[data.venueId]; changed = true; }
+        return;
       }
+      const next = {
+        status: data.status || 'Not contacted',
+        notes: data.notes || '',
+        lastVisited: data.lastVisited || '',
+        priority: !!data.priority,
+      };
+      const prev = overrides[data.venueId];
+      if (prev && JSON.stringify(prev) === JSON.stringify(next)) return;
+      overrides[data.venueId] = next;
+      changed = true;
     });
+    if (!changed) return;
     saveOverrides();
     renderAll();
   }, err => console.error('Overrides subscription failed', err));
@@ -185,8 +196,17 @@ let unsubscribeSavedRoutes = null;
 function subscribeSavedRoutes() {
   if (unsubscribeSavedRoutes) unsubscribeSavedRoutes();
   unsubscribeSavedRoutes = db.collection('routes').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-    savedRoutes = snapshot.docs.map(doc => Object.assign({ id: doc.id }, doc.data()));
+    const next = snapshot.docs.map(doc => Object.assign({ id: doc.id }, doc.data()));
+    /* Same createdAt-resolution echo as subscribeOverrides above — compare
+       only the fields the list actually renders, excluding createdAt
+       itself (the one field guaranteed to differ on the echo), so that
+       spurious second fire doesn't re-render the list for nothing. */
+    const strip = r => JSON.stringify({ id: r.id, name: r.name, stops: r.stops });
+    const same = savedRoutes.length === next.length &&
+      savedRoutes.every((r, i) => strip(r) === strip(next[i]));
+    savedRoutes = next;
     saveSavedRoutesCache();
+    if (same) return;
     renderSavedRoutesList();
   }, err => console.error('Saved routes subscription failed', err));
 }
